@@ -1,6 +1,7 @@
 #include <ncurses.h>
 #include <string>
 #include <utility>
+#include <ctime>
 
 struct Pos {
     int x;
@@ -9,17 +10,65 @@ struct Pos {
 
 struct Map;
 
+struct LettersSet {
+    int size = 100;
+
+    char letters[100] = {
+            'k',
+            'j',
+            'x',
+            'q',
+            'z',
+            'b', 'b',
+            'c', 'c',
+            'm', 'm',
+            'p', 'p',
+            'f', 'f',
+            'h', 'h',
+            'v', 'v',
+            'w', 'w',
+            'y', 'y',
+            'g', 'g', 'g',
+            'l', 'l', 'l', 'l',
+            's', 's', 's', 's',
+            'u', 'u', 'u', 'u',
+            'd', 'd', 'd', 'd',
+            'n', 'n', 'n', 'n', 'n', 'n',
+            'r', 'r', 'r', 'r', 'r', 'r',
+            't', 't', 't', 't', 't', 't',
+            'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o',
+            'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a',
+            'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i',
+            'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e',
+            '_', '_'
+    };
+
+    char getRandomLetter() {
+        if(!size) return '#';
+        int index = rand() % size;
+        char c = letters[index];
+
+        for(int i=index; i<size; i++)
+            letters[i] = letters[i + 1];
+
+        size--;
+
+        return c;
+    }
+};
+
 struct Player {
 public:
     std::string name;
     Pos pos{};
     char direction = 'R';
+    char letters[8];
 
     explicit Player(std::string init_name) {
         name = std::move(init_name);
     }
 
-    void init();
+    void init(LettersSet *ls);
 
     void setPosition();
 };
@@ -64,46 +113,70 @@ public:
         mvprintw(2, size + 5, "Dir : %s ", p->direction == 'R' ? "Right" : "Down");
         mvprintw(p->pos.y, p->pos.x, "");
     }
+
+    static void showUserLetters(const Player *p) {
+        mvprintw(3, size + 5, "Lett: %s ", p->letters);
+        mvprintw(p->pos.y, p->pos.x, "");
+    }
+
+    static void showLeftLetters(const Player *p, const LettersSet *ls) {
+        mvprintw(4, size + 5, "Left: %d   ", ls->size);
+        mvprintw(p->pos.y, p->pos.x, "");
+    }
 };
 
 
-void Player::init() {
+void Player::init(LettersSet *ls) {
     pos.x = 2 + 7;
     pos.y = 1 + 7;
+    for (char &letter: letters) {
+        letter = ls->getRandomLetter();
+    }
     mvprintw(pos.y, pos.x, "");
     Map::showUserName(this);
     Map::showUserPosition(this);
     Map::showUserDirection(this);
+    Map::showUserLetters(this);
+    Map::showLeftLetters(this, ls);
 }
 
 void Player::setPosition() {
     while (int c = getch()) {
-        switch (c) {
-            case KEY_LEFT: {
-                pos.x--;
-                break;
+        if(c >= 97 && c <= 122) {
+            mvprintw(pos.y, pos.x, "%c", c);
+            if(direction == 'R') {
+                pos.x++;
+            } else {
+                pos.y++;
             }
-            case KEY_RIGHT: {
-                if (direction == 'R') {
-                    pos.x++;
-                } else {
-                    direction = 'R';
+        } else {
+            switch (c) {
+                case KEY_LEFT: {
+                    pos.x--;
+                    break;
                 }
-                break;
-            }
-            case KEY_UP: {
-                pos.y--;
-                break;
-            }
-            case KEY_DOWN: {
-                if (direction == 'D') {
-                    pos.y++;
-                } else {
-                    direction = 'D';
+                case KEY_RIGHT: {
+                    if (direction == 'R') {
+                        pos.x++;
+                    } else {
+                        direction = 'R';
+                    }
+                    break;
                 }
-                break;
-            }
-            default: {
+                case KEY_UP: {
+                    pos.y--;
+                    break;
+                }
+                case KEY_DOWN: {
+                    if (direction == 'D') {
+                        pos.y++;
+                    } else {
+                        direction = 'D';
+                    }
+                    break;
+                }
+                default: {
+                }
             }
         }
         Map::showUserPosition(this);
@@ -112,13 +185,16 @@ void Player::setPosition() {
     }
 }
 
-
 struct Game {
     static void init() {
+        srand(time(nullptr));
+
+        auto *ls = new LettersSet();
+
         Map::init();
 
         auto *p1 = new Player("Player 1");
-        p1->init();
+        p1->init(ls);
 
         p1->setPosition();
     }
