@@ -1,6 +1,5 @@
 #include <ncurses.h>
 #include <string>
-#include <utility>
 #include <ctime>
 
 struct Pos {
@@ -149,7 +148,6 @@ void Player::display(LettersSet *ls) {
     Map::showLeftLetters(this, ls);
 }
 
-
 int indexOf(const char *arr, int len, char target) {
     int dashIndex = -1;
     for (int i = 0; i < len; i++) {
@@ -182,7 +180,6 @@ int Player::turn() {
         } else {
             switch (c) {
                 case 10: {
-//                    printw("ENTER");
                     return 0;
                 }
                 case KEY_LEFT: {
@@ -244,6 +241,14 @@ struct Game {
 
         while (true) {
             for (int i = 0; i < playersCount; i++) {
+
+                for (int j=players[i].lettersSize; j<8; j++) {
+                    char letter = ls->getRandomLetter();
+                    if(letter == '#') break;
+                    players[i].letters[j] = letter;
+                    players[i].lettersSize++;
+                }
+
                 players[i].display(ls);
 //                printw("i = %d", i);
                 players[i].turn();
