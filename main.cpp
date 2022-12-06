@@ -44,11 +44,11 @@ struct LettersSet {
     };
 
     char getRandomLetter() {
-        if(!size) return '#';
+        if (!size) return '#';
         int index = rand() % size;
         char c = letters[index];
 
-        for(int i=index; i<size; i++)
+        for (int i = index; i < size; i++)
             letters[i] = letters[i + 1];
 
         size--;
@@ -62,7 +62,8 @@ public:
     std::string name;
     Pos pos{};
     char direction = 'R';
-    char letters[8];
+    int lettersSize = 8;
+    char letters[8]{};
 
     explicit Player(std::string init_name) {
         name = std::move(init_name);
@@ -115,7 +116,10 @@ public:
     }
 
     static void showUserLetters(const Player *p) {
-        mvprintw(3, size + 5, "Lett: %s ", p->letters);
+        mvprintw(3, size + 5, "Lett: ");
+        for (int i = 0; i < 8; i++) {
+            mvprintw(3, size + 5 + 6 + i, "%c ", i < p->lettersSize ? p->letters[i] : ' ');
+        }
         mvprintw(p->pos.y, p->pos.x, "");
     }
 
@@ -140,14 +144,34 @@ void Player::init(LettersSet *ls) {
     Map::showLeftLetters(this, ls);
 }
 
+int indexOf(const char *arr, int len, char target) {
+    int dashIndex = -1;
+    for (int i = 0; i < len; i++) {
+        if (arr[i] == target)
+            return i;
+        if(arr[i] == '_')
+            dashIndex = i;
+    }
+    if(dashIndex != -1)
+        return dashIndex;
+    return -1;
+}
+
 void Player::setPosition() {
     while (int c = getch()) {
-        if(c >= 97 && c <= 122) {
-            mvprintw(pos.y, pos.x, "%c", c);
-            if(direction == 'R') {
-                pos.x++;
-            } else {
-                pos.y++;
+        if (c >= 97 && c <= 122) {
+            int charPos = indexOf(letters, lettersSize, (char) c);
+            if (charPos != -1) {
+                mvprintw(pos.y, pos.x, "%c", c);
+                if (direction == 'R') {
+                    pos.x++;
+                } else {
+                    pos.y++;
+                }
+                for (int i = charPos; i < lettersSize; i++)
+                    letters[i] = letters[i + 1];
+
+                lettersSize--;
             }
         } else {
             switch (c) {
@@ -181,6 +205,8 @@ void Player::setPosition() {
         }
         Map::showUserPosition(this);
         Map::showUserDirection(this);
+        Map::showUserLetters(this);
+
         mvprintw(pos.y, pos.x, "");
     }
 }
