@@ -70,8 +70,9 @@ public:
     }
 
     void init(LettersSet *ls);
+    void display(LettersSet *ls);
 
-    void setPosition();
+    int turn(); // 0 - ok, 1 - fail
 };
 
 
@@ -105,8 +106,8 @@ public:
     }
 
     static void showUserPosition(const Player *p) {
-        const char x[] = {get_letter(p->pos.x)};
-        mvprintw(1, size + 5, "Pos : %s%d ", x, p->pos.y);
+        const char x = get_letter(p->pos.x);
+        mvprintw(1, size + 5, "Pos : %c%d ", x, p->pos.y);
         mvprintw(p->pos.y, p->pos.x, "");
     }
 
@@ -137,6 +138,10 @@ void Player::init(LettersSet *ls) {
         letter = ls->getRandomLetter();
     }
     mvprintw(pos.y, pos.x, "");
+    this->display(ls);
+}
+
+void Player::display(LettersSet *ls) {
     Map::showUserName(this);
     Map::showUserPosition(this);
     Map::showUserDirection(this);
@@ -144,20 +149,21 @@ void Player::init(LettersSet *ls) {
     Map::showLeftLetters(this, ls);
 }
 
+
 int indexOf(const char *arr, int len, char target) {
     int dashIndex = -1;
     for (int i = 0; i < len; i++) {
         if (arr[i] == target)
             return i;
-        if(arr[i] == '_')
+        if (arr[i] == '_')
             dashIndex = i;
     }
-    if(dashIndex != -1)
+    if (dashIndex != -1)
         return dashIndex;
     return -1;
 }
 
-void Player::setPosition() {
+int Player::turn() {
     while (int c = getch()) {
         if (c >= 97 && c <= 122) {
             int charPos = indexOf(letters, lettersSize, (char) c);
@@ -175,6 +181,10 @@ void Player::setPosition() {
             }
         } else {
             switch (c) {
+                case 10: {
+//                    printw("ENTER");
+                    return 0;
+                }
                 case KEY_LEFT: {
                     pos.x--;
                     break;
@@ -212,20 +222,36 @@ void Player::setPosition() {
 }
 
 struct Game {
-    static void init() {
+    int playersCount = 2;
+
+    Player players[4] = {
+            Player("Player 1"),
+            Player("Player 2"),
+            Player("Player 3"),
+            Player("Player 4"),
+    };
+
+    void init() {
         srand(time(nullptr));
 
         auto *ls = new LettersSet();
 
         Map::init();
 
-        auto *p1 = new Player("Player 1");
-        p1->init(ls);
+        for (int i = 0; i < playersCount; i++) {
+            players[i].init(ls);
+        }
 
-        p1->setPosition();
+        while (true) {
+            for (int i = 0; i < playersCount; i++) {
+                players[i].display(ls);
+//                printw("i = %d", i);
+                players[i].turn();
+            }
+        }
     }
 
-    static int end() {
+    int end() {
         getch();
         endwin();
         return 0;
@@ -234,8 +260,9 @@ struct Game {
 
 
 int main() {
-    Game::init();
-    return Game::end();
+    Game* g = new Game();
+    g->init();
+    return g->end();
 }
 
 
